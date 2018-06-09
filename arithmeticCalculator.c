@@ -11,7 +11,9 @@
 #include<ctype.h>
 
 #define MAX 50  //number of stack size and input element size
-
+#define TRUE 1
+char inputString[MAX][MAX];
+char outputString[MAX][3];
 typedef struct STACK
 {
     int data[MAX];
@@ -26,29 +28,64 @@ int pop(Stack *);// pop get elements to stack top elements
 void push(Stack *,int);
 int top(Stack *);   //value of the top element
 void convertInfixToPostfix(char infix[],char postfix[]);
-void resolvePostfixOperation(char postfix[]);
+int resolvePostfixOperation(char postfix[]);
+static int getLineNumber();
+void readFile(int numberOfLine);
+
+static int getLineNumber() {
+    //Bu fonksiyon dosyada kaç satır oldugunu bulur.
+    FILE *file = fopen("/Users/betulyazici/Desktop/input5.txt", "r");
+    int count=0;
+    char c;
+    for (c = getc(file); c != EOF; c = getc(file))
+        if (c == '\n') // yeni satıra geçtigini anlayınca count artırırız.
+            count = count + 1;
+    fclose(file);
+    
+    return count;
+    
+}
+void readFile(int numberOfLine) {
+    //dosyadan okuma yapılan metoddur ',' ile ayırır /n olunca yeni bir satıra geçtigini anlarız.
+    FILE *file = fopen("/Users/betulyazici/Desktop/input5.txt", "r");
+    for(int row = 0; row < numberOfLine; row++)
+    {
+        int column = 0;
+        while(column < MAX && (inputString[row][column-1]) !=';')
+        {
+            fscanf(file, "%c\n", &inputString[row][column]);
+            column++;
+        }
+    }
+    fclose(file);
+    
+}
+
 
 int main()
 {
-    
     char postfix[MAX];
-   //char infix[MAX];
-    char inputString[MAX]="z = 3 + 14 * 5;" ;
-    //char inputString[MAX];
-    printf("Enter an infix expression(eg: 5+2*4): formatted");
-   // gets(inputString);
-   
-    const char delimiters[] = "=";
-    char * infix = strdup(inputString);
-    char * result;
-    result = strsep(&infix, delimiters);
-    convertInfixToPostfix(infix,postfix);
-    printf("\nPostfix expression: %s\n",postfix);
-    resolvePostfixOperation(postfix);
-    
+    int numberOfLine=getLineNumber();
+    readFile(numberOfLine);
+    for (int row=0;row<numberOfLine;row++){
+        const char delimiters[] = "=";
+        int column=0;
+        char input[MAX];
+        while (column<MAX && inputString[row][column] != '\0')
+        {
+            input[column] =inputString[row][column];
+            column++;
+        }
+        char * infix = strdup(input);
+        outputString[row][0]= *strsep(&infix, delimiters);
+        convertInfixToPostfix(infix,postfix);
+        printf("\nPostfix expression: %s\n",postfix);
+        outputString[row][1]= resolvePostfixOperation(postfix)+ '0';
+        
+    }
     
 }
-void resolvePostfixOperation(char postfix[]){
+int resolvePostfixOperation(char postfix[]){
     Stack stack;
     initialize(&stack);
     int i=0,op1,op2;
@@ -73,11 +110,17 @@ void resolvePostfixOperation(char postfix[]){
     }
     
     printf("\n Result after Evaluation: %d\n",stack.data[stack.top]);
-    
-
-    
+    return stack.data[stack.top];
     
 }
+int skip_blanks(int i,char infix[])
+{
+    while (infix[i] == ' ') i++;
+    
+    return i;
+}
+
+
 
 int stopControl(int i,char infix[]){
     if(i<MAX && infix[i] !='\0' && infix[i] !=';')
@@ -86,14 +129,16 @@ int stopControl(int i,char infix[]){
 }
 void convertInfixToPostfix(char infix[],char postfix[])
 {
+    
     Stack stack;
     char x,token;
     int i=0,j=0;    //i-index of infix,j-index of postfix
     initialize(&stack);
- 
+    
+    
     while(!stopControl(i,infix))
     {
-        token=infix[i];
+        token = infix[i];
         if(isalnum(token))
             postfix[j++]=token;
         else
@@ -104,7 +149,7 @@ void convertInfixToPostfix(char infix[],char postfix[])
                     while((x=pop(&stack))!='(')
                         postfix[j++]=x;
         
-                    else
+                else
                 {
                     while(findPriorityGivenExpression(token)<=findPriorityGivenExpression(top(&stack))&&!isEmpty(&stack))
                     {
@@ -176,3 +221,4 @@ int top(Stack *p)
 {
     return (p->data[p->top]);
 }
+
