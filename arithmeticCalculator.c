@@ -13,7 +13,8 @@
 #define MAX 50  //number of stack size and input element size
 #define TRUE 1
 char inputString[MAX][MAX];
-char outputString[MAX][3];
+char outputString[MAX];
+int output[MAX];
 typedef struct STACK
 {
     int data[MAX];
@@ -28,7 +29,7 @@ int pop(Stack *);// pop get elements to stack top elements
 void push(Stack *,int);
 int top(Stack *);   //value of the top element
 void convertInfixToPostfix(char infix[],char postfix[]);
-int resolvePostfixOperation(char postfix[]);
+void resolvePostfixOperation(char postfix[],int effectedRow,int row);
 static int getLineNumber();
 void readFile(int numberOfLine);
 
@@ -77,15 +78,44 @@ int main()
             column++;
         }
         char * infix = strdup(input);
-        outputString[row][0]= *strsep(&infix, delimiters);
+        int temp=0;
+        int stop=0;
+        char opName=*strsep(&infix, delimiters);
+        while (temp<row && !stop ){
+            if(outputString[temp] == opName){
+                stop=1;
+            }
+            else{
+                temp++;
+            }
+            
+        }
+        if(!stop){
+            outputString[row]= opName;
+        }
         convertInfixToPostfix(infix,postfix);
         printf("\nPostfix expression: %s\n",postfix);
-        outputString[row][1]= resolvePostfixOperation(postfix)+ '0';
+        resolvePostfixOperation(postfix,temp,row);
         
     }
     
 }
-int resolvePostfixOperation(char postfix[]){
+char characterList[4]={'+','-','*','/'};
+int IsAlphabetic(char ch){
+    int k=0;
+    int stop=0;
+    while (k<4 && !stop){
+        if(ch == characterList[k])
+            stop=1;
+        else
+            k++;
+    }
+    if(!stop)
+        return 1;
+    else return 0;
+    
+}
+void resolvePostfixOperation(char postfix[],int effectedRow,int row){
     Stack stack;
     initialize(&stack);
     int i=0,op1,op2;
@@ -94,6 +124,14 @@ int resolvePostfixOperation(char postfix[]){
     while( (ch=postfix[i++]) != '\0'){
         if(isdigit(ch))
             push(&stack,ch-'0'); /* Push the operand */
+        else if(IsAlphabetic(ch)){
+            int temp=row;
+            while (ch!=outputString[temp])
+            {
+                temp--;
+            }
+            push(&stack,output[temp]);
+        }
         else if (ch != ' '){
             op2=pop(&stack);
             op1=pop(&stack);
@@ -110,7 +148,8 @@ int resolvePostfixOperation(char postfix[]){
     }
     
     printf("\n Result after Evaluation: %d\n",stack.data[stack.top]);
-    return stack.data[stack.top];
+    output[effectedRow]=stack.data[stack.top];
+    
     
 }
 int skip_blanks(int i,char infix[])
@@ -221,4 +260,3 @@ int top(Stack *p)
 {
     return (p->data[p->top]);
 }
-
