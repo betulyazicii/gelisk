@@ -9,9 +9,7 @@
 #include <string.h>
 #include<stdio.h>
 #include<ctype.h>
-
 #define MAX 50  //number of stack size and input element size
-#define TRUE 1
 char inputString[MAX][MAX];
 char outputString[MAX];
 int output[MAX];
@@ -21,25 +19,26 @@ typedef struct STACK
     int top;
 }Stack;
 
-int findPriorityGivenExpression(char); // return priority of symbol
+int findPriorityGivenExpression(char); // return priority of given symbol
 void initialize(Stack *);//initialize stack
 int isEmpty(Stack *);// control stack empty or not
 int isFull(Stack *);// control stack full or not
 int pop(Stack *);// pop get elements to stack top elements
-void push(Stack *,int);
-int top(Stack *);   //value of the top element
-void convertInfixToPostfix(char infix[],char postfix[]);
-void resolvePostfixOperation(char postfix[],int effectedRow,int row);
-static int getLineNumber();
-void readFile(int numberOfLine);
+void push(Stack *,int); //push elements to stack
+int top(Stack *);   //return value of the top element
+void convertInfixToPostfix(char infix[],char postfix[]);// this func return infix expression to postfix. It should given a = b + 4; format.
+void resolvePostfixOperation(char postfix[],int effectedRow,int row); // this function resolve postifx expression
+static int getLineNumber(); // calculate file line count
+void readFile(int numberOfLine); // read file write inputString array.
+void showStack(Stack *,char token,char postfix[]); //when call show stack and postfix array  situation
 
 static int getLineNumber() {
-    //Bu fonksiyon dosyada kaç satır oldugunu bulur.
-    FILE *file = fopen("/Users/betulyazici/Desktop/input5.txt", "r");
+    //this function find number of line in file.
+    FILE *file = fopen("/Users/betulyazici/Desktop/input1.txt", "r");
     int count=0;
     char c;
     for (c = getc(file); c != EOF; c = getc(file))
-        if (c == '\n') // yeni satıra geçtigini anlayınca count artırırız.
+        if (c == '\n') //understanding newline
             count = count + 1;
     fclose(file);
     
@@ -47,8 +46,8 @@ static int getLineNumber() {
     
 }
 void readFile(int numberOfLine) {
-    //dosyadan okuma yapılan metoddur ',' ile ayırır /n olunca yeni bir satıra geçtigini anlarız.
-    FILE *file = fopen("/Users/betulyazici/Desktop/input5.txt", "r");
+    //delimited ; write inputstring matris.
+    FILE *file = fopen("/Users/betulyazici/Desktop/input1.txt", "r");
     for(int row = 0; row < numberOfLine; row++)
     {
         int column = 0;
@@ -65,10 +64,10 @@ void readFile(int numberOfLine) {
 
 int main()
 {
-    char postfix[MAX];
     int numberOfLine=getLineNumber();
     readFile(numberOfLine);
     for (int row=0;row<numberOfLine;row++){
+        char postfix[MAX]="";
         const char delimiters[] = "=";
         int column=0;
         char input[MAX];
@@ -79,8 +78,8 @@ int main()
         }
         char * infix = strdup(input);
         int temp=0;
-        int stop=0;
-        char opName=*strsep(&infix, delimiters);
+        int stop=0;  //control case
+        char opName=*strsep(&infix, delimiters); // opName is function variable.exmp:split x=a+b takes x.
         while (temp<row && !stop ){
             if(outputString[temp] == opName){
                 stop=1;
@@ -93,15 +92,15 @@ int main()
         if(!stop){
             outputString[row]= opName;
         }
-        convertInfixToPostfix(infix,postfix);
-        printf("\nPostfix expression: %s\n",postfix);
-        resolvePostfixOperation(postfix,temp,row);
+        convertInfixToPostfix(infix,postfix); //this function convert infix expression to postfix expression
+        resolvePostfixOperation(postfix,temp,row); // function evaluate postfix expression
         
     }
     
 }
 char characterList[4]={'+','-','*','/'};
 int IsAlphabetic(char ch){
+    //catch a,b,c,d,e...
     int k=0;
     int stop=0;
     while (k<4 && !stop){
@@ -123,7 +122,7 @@ void resolvePostfixOperation(char postfix[],int effectedRow,int row){
     
     while( (ch=postfix[i++]) != '\0'){
         if(isdigit(ch))
-            push(&stack,ch-'0'); /* Push the operand */
+            push(&stack,ch-'0'); // Push the operand
         else if(IsAlphabetic(ch)){
             int temp=row;
             while (ch!=outputString[temp])
@@ -147,9 +146,8 @@ void resolvePostfixOperation(char postfix[],int effectedRow,int row){
         }
     }
     
-    printf("\n Result after Evaluation: %d\n",stack.data[stack.top]);
     output[effectedRow]=stack.data[stack.top];
-    
+    printf("Result After Evaluation: %c  ->  %d \n",outputString[effectedRow],output[effectedRow]);
     
 }
 int skip_blanks(int i,char infix[])
@@ -162,6 +160,7 @@ int skip_blanks(int i,char infix[])
 
 
 int stopControl(int i,char infix[]){
+    //control null and ; situation
     if(i<MAX && infix[i] !='\0' && infix[i] !=';')
         return 0;
     else return 1;
@@ -173,7 +172,6 @@ void convertInfixToPostfix(char infix[],char postfix[])
     char x,token;
     int i=0,j=0;    //i-index of infix,j-index of postfix
     initialize(&stack);
-    
     
     while(!stopControl(i,infix))
     {
@@ -197,14 +195,18 @@ void convertInfixToPostfix(char infix[],char postfix[])
                     }
                     push(&stack,token);
                 }
+        showStack(&stack,token,postfix);
         i++;
+        
     }
     
     while(!isEmpty(&stack))
     {
         x=pop(&stack);
         postfix[j++]=x;
+        showStack(&stack,x,postfix);
     }
+    
     postfix[j]='\0';
 }
 
@@ -242,6 +244,34 @@ int isFull(Stack *s)
     return 0 ;
 }
 
+void showStack(Stack *s,char token,char postfix[]){
+    if(token != ' ' && token != '\0' && token != ';'){
+        int postfixPointer=0;
+        printf("Postfix:");
+        while (postfixPointer<MAX && postfix[postfixPointer]!= '\0'){
+            printf("%c",postfix[postfixPointer]);
+            postfixPointer++;
+        }
+        printf("  ");
+        if (s->top == -1)
+        {
+            printf ("Stack is empty\n");
+            return;
+        }
+        else
+        {
+            printf ("The stack is:");
+            for (int stackPointer=0;stackPointer<= s->top; stackPointer++)
+            {
+                char value= (char) s->data[stackPointer];
+                printf ("%c ", value);
+                printf("  ");
+            }
+        }
+    }
+    printf("\n");
+    
+}
 void push(Stack *s,int x)
 {
     s->top=s->top+1;
@@ -260,3 +290,4 @@ int top(Stack *p)
 {
     return (p->data[p->top]);
 }
+
